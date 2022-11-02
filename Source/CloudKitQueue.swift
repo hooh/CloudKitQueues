@@ -507,6 +507,12 @@ public class CloudKitQueue {
                     if let error = error as NSError?, error.code == CKError.Code.quotaExceeded.rawValue {
                         self.quotaExceeded = true
                     }
+                    
+                    if let error = error as NSError?, self.rateLimited(error) || error.code == CKError.Code.serviceUnavailable.rawValue || error.code == CKError.Code.partialFailure.rawValue {
+                        
+                        return
+                    }
+                    
 
                     guard let completions = self.sync(execute: { self.recordsToSlowSave[ckRecord] }) else { return }
 
@@ -524,7 +530,7 @@ public class CloudKitQueue {
                 if let error = error as NSError? {
                     if error.code == CKError.Code.quotaExceeded.rawValue { self.quotaExceeded = true }
 
-                    if !self.rateLimited(error) && error.code != CKError.Code.partialFailure.rawValue {
+                    if !self.rateLimited(error) && error.code != CKError.Code.serviceUnavailable.rawValue {
                         os_log("modifyRecordsCompletionBlock error: %@", type: .error, error.localizedDescription)
 
                         self.sync {
